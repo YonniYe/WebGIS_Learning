@@ -1,0 +1,113 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**NDVI**(Normalized Difference Vegetation Index)，即归一化差分植被指数，是反映农作物长势和营养信息的重要参数之一。它的计算原理很简单，就是**近红外**波段的反射值与**红光**波段的反射值之差比上两者之和。<br>\n",
+    "即NDVI=(NIR-R)/(NIR+R) <br>\n",
+    "NIR 为近红外波段的反射值，R 为红光波段的反射值。\n",
+    "> 健康的植物叶绿素含量高，可吸收太阳光中大部分的红光和蓝光，而绿色光还有近红外则会被反射。如果植物不健康，则红光吸收能力不足，会更多得进行反射，而近红外也会相对被吸收得多一些。"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "- NDVI 的应用：检测植被生长状态、植被覆盖度和消除部分辐射误差等；\n",
+    "\n",
+    "- -1<=NDVI<=1，负值表示地面覆盖为云、水、雪等，对可见光高反射；0表示有岩石或裸土等，NIR和R近似相等；正值，表示有植被覆盖，且随覆盖度增大而增大；\n",
+    "\n",
+    "- NDVI的局限性表现在，用非线性拉伸的方式增强了NIR和R的反射率的对比度。对于同一幅图象，分别求RVI和NDVI时会发现，RVI值增加的速度高于NDVI增加速度，即**NDVI对高植被区具有较低的灵敏度**；\n",
+    "\n",
+    "- NDVI能反映出植物冠层的背景影响，如土壤、潮湿地面、雪、枯叶、粗糙度等，且与植被覆盖有关。"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "编程要点如下：\n",
+    "- NIR 为波段3，RED 为波段2\n",
+    "- 将波段3读入数组 data3 ，将波段2读入数组 data2 ；\n",
+    "- 当 data3 和 data2 均为 0 时（例如用 0 表示 `NODATA` ），会出现被 0 除的错误，导致程序崩溃。需要用`mask`配合`choose`将 0 值去掉。"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "<ipython-input-3-75a9d2970b1e>:11: RuntimeWarning: invalid value encountered in true_divide\n",
+      "  ndvi = numpy.choose(mask, (-99, (data3 - data2) / (data3 + data2)))\n"
+     ]
+    }
+   ],
+   "source": [
+    "from osgeo import gdal\n",
+    "import numpy\n",
+    "dataset = gdal.Open(\"/gdata/geotiff_file.tif\")\n",
+    "band2 = dataset.GetRasterBand(2)\n",
+    "band3 = dataset.GetRasterBand(3)\n",
+    "cols = 100\n",
+    "rows = 100\n",
+    "data2 = band2.ReadAsArray(0, 0, cols, rows).astype(numpy.float16)\n",
+    "data3 = band3.ReadAsArray(0, 0, cols, rows).astype(numpy.float16)\n",
+    "mask = numpy.greater(data3 + data2, 0)  # 检查x1是否大于x2。返回bool值类型。\n",
+    "ndvi = numpy.choose(mask, (-99, (data3 - data2) / (data3 + data2)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[0.2766, 0.318 , 0.4285, ..., 0.3057, 0.275 , 0.6   ],\n",
+       "       [0.1951, 0.2208, 0.3135, ..., 0.2683, 0.3538, 1.    ],\n",
+       "       [0.2142, 0.2195, 0.2896, ..., 0.4182, 0.758 , 1.    ],\n",
+       "       ...,\n",
+       "       [0.6313, 0.6113, 0.6553, ..., 0.3333, 0.359 , 0.36  ],\n",
+       "       [0.4119, 0.4119, 0.422 , ..., 0.3784, 0.3784, 0.3418],\n",
+       "       [0.3684, 0.322 , 0.309 , ..., 0.4084, 0.4   , 0.3684]],\n",
+       "      dtype=float16)"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ndvi"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
